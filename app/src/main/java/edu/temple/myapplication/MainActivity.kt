@@ -15,9 +15,18 @@ class MainActivity : AppCompatActivity() {
 
     var timerBinder : TimerService.TimerBinder? = null
 
+    lateinit var timerTextView : TextView
+
+    val timerHandler = Handler(Looper.getMainLooper()){
+        timerTextView.text = it.what.toString()
+        true
+    }
+
     val serviceConnection = object : ServiceConnection{
         override fun onServiceConnected(p0: ComponentName?, p1: IBinder?) {
-            timerBinder = p1 as TimerService.TimerBinder
+            timerBinder = (p1 as TimerService.TimerBinder).apply {
+                setHandler(timerHandler)
+            }
         }
 
         override fun onServiceDisconnected(p0: ComponentName?) {
@@ -30,6 +39,8 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        timerTextView = findViewById(R.id.textView)
+
         bindService(
             Intent(this, TimerService::class.java),
             serviceConnection,
@@ -38,7 +49,7 @@ class MainActivity : AppCompatActivity() {
 
         findViewById<Button>(R.id.startButton).setOnClickListener {
             timerBinder?.run {
-                if (!isRunning) {
+                if (!isRunning && !paused) {
                     start(30)
                 }
                 else {
