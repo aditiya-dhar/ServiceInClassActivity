@@ -12,12 +12,20 @@ import android.view.Menu
 import android.view.MenuItem
 import android.widget.Button
 import android.widget.TextView
+import org.json.JSONObject
+import java.io.BufferedReader
+import java.io.File
+import java.io.FileOutputStream
+import java.io.FileReader
+import java.io.IOException
 
 class MainActivity : AppCompatActivity() {
 
     var timerBinder : TimerService.TimerBinder? = null
 
     lateinit var timerTextView : TextView
+
+    lateinit var file : File
 
     val timerHandler = Handler(Looper.getMainLooper()){
         timerTextView.text = it.what.toString()
@@ -40,6 +48,8 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        file = File(filesDir, "timer_file")
 
         timerTextView = findViewById(R.id.textView)
 
@@ -76,15 +86,46 @@ class MainActivity : AppCompatActivity() {
     private fun startOrPauseTimer() {
         timerBinder?.run {
             if (!isRunning && !paused) {
-                start(30)
+                start(getTime())
             }
             else {
                 pause()
+                save()
             }
         }
     }
 
     private fun stopTimer() {
         timerBinder?.stop()
+    }
+
+    private fun save() {
+        try {
+            val outputStream = FileOutputStream(file)
+            outputStream.write(timerTextView.text.toString().toByteArray())
+            outputStream.close()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    private fun getTime() : Int {
+        var time = 30
+        try {
+            val br = BufferedReader(FileReader(file))
+            val text = StringBuilder()
+            var line: String?
+            while (br.readLine().also { line = it } != null) {
+                text.append(line)
+                text.append('\n')
+            }
+            br.close()
+            if (text.isNotEmpty()){
+                text.toString().trim().toInt()
+            }
+        } catch (e: IOException) {
+            e.printStackTrace()
+        }
+        return time
     }
 }
